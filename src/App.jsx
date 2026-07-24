@@ -61,7 +61,10 @@ function App() {
   };
 
   useEffect(() => {
-    loadSearchResults(debouncedSearchTerm);
+    const loadResults = async () => {
+      await loadSearchResults(debouncedSearchTerm);
+    };
+    loadResults();
   }, [debouncedSearchTerm]);
 
   useEffect(() => {
