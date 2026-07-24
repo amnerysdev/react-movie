@@ -5,17 +5,30 @@ const ENDPOINT = import.meta.env.VITE_APPWRITE_ENDPOINT;
 const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
 const TABLE_ID = import.meta.env.VITE_APPWRITE_TABLE_ID;
 
+let database = null;
 
-const client = new Client()
+// Only initialize Appwrite client when we have a valid endpoint & project.
+// This prevents throws during import in CI/test environments where env vars
+// are not configured.
+if (typeof ENDPOINT === 'string' && ENDPOINT.trim() && typeof PROJECT_ID === 'string' && PROJECT_ID.trim()) {
+  const client = new Client()
     .setEndpoint(ENDPOINT)
     .setProject(PROJECT_ID)
 
-const database = new Databases(client)
+  database = new Databases(client)
+}
 
 export const updateSearchCount = async (searchTerm, movie) => {
   const trimmedSearchTerm = searchTerm?.trim()
 
   if (!trimmedSearchTerm || !movie?.id) {
+    return
+  }
+
+  // If Appwrite is not configured (e.g. running unit tests), skip the network call.
+  if (!database) {
+    // Optionally log in dev only:
+    // console.debug('Appwrite not configured — skipping updateSearchCount')
     return
   }
 
@@ -58,14 +71,18 @@ export const updateSearchCount = async (searchTerm, movie) => {
 }
 
 export const getTrendingMovies = async () => {
- try {
-  const result = await database.listDocuments(DATABASE_ID, TABLE_ID, [
-    Query.limit(5),
-    Query.orderDesc("count")
-  ])
+  // If Appwrite is not configured, return empty list for tests.
+  if (!database) return []
 
-  return result.documents;
- } catch (error) {
-  console.error(error);
- }
+  try {
+    const result = await database.listDocuments(DATABASE_ID, TABLE_ID, [
+      Query.limit(5),
+      Query.orderDesc("count")
+    ])
+
+    return result.documents
+  } catch (error) {
+    console.error(error)
+    return []
+  }
 }
