@@ -68,7 +68,10 @@ function App() {
   }, [debouncedSearchTerm]);
 
   useEffect(() => {
-    loadTrendingMovies();
+    const initTrending = async () => {
+      await loadTrendingMovies();
+    };
+    initTrending();
   }, []);
 
   return (
